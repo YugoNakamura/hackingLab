@@ -262,4 +262,70 @@
 
 4. P.441の代表的なスキャンを実現するPythonプログラムを作成してください．
 
-    自作のNMapをPythonで作成する
+    * 参考にしたサイト
+        https://zenn.dev/myuki/articles/8454be9d646ea9
+
+    scapyをインタラクティブモードで起動する
+    ```
+    #python仮想環境へ移行
+    >source pyenv/bin/activate
+    #scapy起動
+    >sudo scapy
+    ```
+
+    パケットを送信する関数
+    * TCP SYNスキャン
+        ```
+        sr1(IP(dst='192.168.56.106') / TCP(dport=80, flags='S')
+        ```
+    * FINスキャン
+        ```
+        sr1(IP(dst='192.168.56.106') / TCP(dport=80, flags='F')
+        ```
+    * Xmasスキャン
+        ```
+        sr1(IP(dst='192.168.56.106') / TCP(dport=80, flags='FUR')
+        ```
+    * ACKスキャン
+        ```
+        sr1(IP(dst='192.168.56.106') / TCP(dport=80, flags='A')
+        ```
+    * UDPスキャン
+        ```
+        sr(IP(dst='192.168.56.106') / UDP(dport=80))
+        ```
+
+1. RustScanは高速なポートスキャナーです．Nmapはスキャン対象の全ポートに対して，オプションで指定した動作を試みます．一方，RustScanは先にポートスキャンしてから開いているポートに対してNmapで指定したオプションを試みます．結果としてRustScanの方が高速なポートスキャンを実現できます．
+   
+    1. RustScanの実行環境を構築してください
+        公式githubからパッケージをダウンロードしてインストール
+        ```
+        >wget https://github.com/RustScan/RustScan/releases/download/2.3.0/rustscan_2.3.0_amd64.deb
+        >sudo dpkg -i rustscan_2.3.0_amd64.deb 
+        ```
+    2. rustscan -hコマンドを実行して「-a」「--ulimit」「--」オプションの役割を調べてください
+        * -aオプション
+            > A comma-delimited list or newline-delimited file of separated CIDRs, IPs, or hosts to be scanned
+            
+            コンマか改行でスキャンしたいIPアドレスかホスト名を指定する
+        * --unlimitオプション
+            > Automatically ups the ULIMIT with the value you provided
+            
+            ファイル制限を指定した値に変更
+            https://jpn.nec.com/cybersecurity/blog/220930/index.html
+        * --オプション
+
+            Nmapのオプションを入力し，RustScanの出力をNmapに引き継ぐ
+    3. 次のコマンドで，NmapやRustScanでDC-2マシンの全ポートをスキャンできます．ここでは同時にバージョン検出をOS検出も実行しています．それぞれの出力の違い，速度の差を比較してください．
+
+    ```
+    > nmap -p- -sV -A $IP --systemdns
+    > nmap -p- -A $IP -T4 --systemdns
+    > rustscan -a $IP --unlimit 5000 -- -sV -A --systemdns
+    ```
+
+    * 実行時間の比較
+        * mmap高速スキャン(-T4)
+            11.269s
+        * RustScan
+            13.528s
